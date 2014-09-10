@@ -1,4 +1,4 @@
-##ng-gulp-skel
+##gulp-ng-skel
 
 A basic skeleton setup for angular projects that combines the convenience of bower module installation with an easy-to-edit gulp build chain.
 
