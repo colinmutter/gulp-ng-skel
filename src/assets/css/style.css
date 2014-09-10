@@ -1,0 +1,25 @@
+body {
+  font-family: 'PT Sans', sans-serif;
+  background: ##1baa00;
+  background-image: url("/images/zenbg-1.png"), url("/images/zenbg-2.png");
+  background-repeat: repeat-x, repeat;
+}
+
+.logo-title {
+  font-family: 'Advent Pro', sans-serif;
+  font-size:180px;
+  font-weight:bold;
+  color:#fafafa;
+}
+
+.screen-center {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  height:100px;
+  width:80%;
+  text-align: center;
+}

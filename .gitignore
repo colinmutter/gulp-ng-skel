@@ -1,0 +1,10 @@
+# npm errors
+npm-debug.log
+
+# Build chain stuff
+tmp
+dist
+
+# Vendor/deps
+vendor/bower
+node_modules
