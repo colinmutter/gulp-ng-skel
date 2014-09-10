@@ -13,18 +13,20 @@
      * Authentication interceptor for $http calls
      * @ngInject
      */
-    function authInterceptor($q, $location, AuthService, flash) {
+    function authInterceptor($q, $location, $injector, flash) {
       return {
         'response': function responseInterceptor(response) {
           // Everything is OK
           if (response.status < 400) {
             return response;
           }
-
+          var AuthService = $injector.get('AuthService');
+          // var $http = $injector.get('$http');
+          //
           // Otherwise, we have a problem...
           var currentPath = $location.path();
           // Response is unauthorized but we exclude /login so we don't get into
-          //   an infinite redirect
+          // an infinite redirect
           if (response.status === 401 && response.config.url !== '/login') {
             AuthService.user = null;
             $location.search('redirectUrl', currentPath)
@@ -42,7 +44,6 @@
         }
       };
     }
-
 
     // Add the auth interceptor onto the response interceptors stack
     $httpProvider.interceptors.push(authInterceptor);
