@@ -1,4 +1,4 @@
-##gulp-ng-skel
+6##gulp-ng-skel
 
 A basic skeleton setup for angular projects that combines the convenience of bower module installation with an easy-to-edit gulp build chain.
 
@@ -23,7 +23,13 @@ Finally, you can build the project with
 gulp build
 ```
 
-Other than that, running just `gulp` from the command line will show you other build options
+To build, then watch, use:
+
+```
+gulp watch
+```
+
+To view other commands, simply run `gulp` in the project directory
 
 
 ### Layout

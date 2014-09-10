@@ -4,6 +4,7 @@
 var fs = require('fs'),
   merge = require('merge-stream'),
   gulp = require('gulp'),
+  angularFilesort = require('gulp-angular-filesort'),
   gutil = require('gulp-util'),
   jshint = require('gulp-jshint'),
   ngAnnotate = require('gulp-ng-annotate'),
@@ -15,8 +16,10 @@ var fs = require('fs'),
   rimraf = require('gulp-rimraf'),
   rename = require('gulp-rename'),
   size = require('gulp-size'),
+  newer = require('gulp-newer'),
   imagemin = require('gulp-imagemin'),
   pngcrush = require('imagemin-pngcrush'),
+  flatten = require('gulp-flatten'),
   taskListing = require('gulp-task-listing');
 
 /**
@@ -62,7 +65,7 @@ var sources = {
   // Will get concatenated to libs.js
   vendorjs: [
     // Common deps
-    paths.bower + 'jquery/dist/jquery.min.js',
+    paths.bower + 'jquery/jquery.min.js',
     paths.bower + 'underscore/underscore.js',
     paths.bower + 'bootstrap/dist/js/bootstrap.min.js',
     paths.bower + 'angular/angular.min.js',
@@ -72,6 +75,7 @@ var sources = {
     paths.bower + 'angular-resource/angular-resource.min.js',
     paths.bower + 'angular-route/angular-route.min.js',
     paths.bower + 'angular-ui/build/angular-ui.min.js',
+    paths.bower + 'autofill-event/src/autofill-event.js',
 
     // Manual vendor deps
     paths.vendor + '**/*.js',
@@ -85,7 +89,16 @@ var sources = {
 var dests = {
   build: {
     root: paths.build,
-    js: paths.build + 'js'
+    js: paths.build + 'js',
+    images: paths.build + 'images',
+    css: paths.build + 'css',
+    jsorig: paths.build + 'js/sources'
+  },
+  filenames: {
+    app: 'app.js',
+    appmin: 'app.min.js',
+    vendor: 'libs.js',
+    vendormin: 'libs.min.js'
   }
 };
 
@@ -94,7 +107,10 @@ var dests = {
  * ===  TASKS  ==========================
  * ======================================
  */
+
+
 gulp.task('default', taskListing);
+gulp.task('build', ['css', 'html', 'images', 'js', 'vendor']);
 
 /**
  * lint
@@ -118,7 +134,7 @@ gulp.task('clean', function () {
 /**
  * build
  */
-gulp.task('js', function () {
+gulp.task('js', ['lint'], function () {
 
   // Angular application source code
   var src = gulp.src(sources.js)
@@ -131,7 +147,10 @@ gulp.task('js', function () {
 
   // Merge the two streams to create an unminified, concatenated build file
   var build = merge(src, tpl)
-    .pipe(uglify('app.js', {
+    // Ensure that the order in which we load files allows for angular modules
+    // to be defined before accessing (downside to not using broserify)
+    .pipe(angularFilesort())
+    .pipe(uglify(dests.filenames.app, {
       mangle: false,
       output: {
         beautify: true
@@ -145,8 +164,15 @@ gulp.task('js', function () {
 
   // Merge the two streams to create a minified build file
   var buildmini = merge(src, tpl)
-    .pipe(uglify('app.min.js', {
+    .pipe(angularFilesort())
+    // Remove paths so that we can have the sourcemap point to a single dir
+    .pipe(flatten())
+    // Write out all raw source files into the dist dir (for sourcemaps)
+    .pipe(gulp.dest(dests.build.js + '/sources'))
+    // Minify and produce source maps
+    .pipe(uglify(dests.filenames.appmin, {
       outSourceMap: true,
+      basePath: 'dist/js',
       enclose: {
         "window": "window",
         "window.angular": "angular",
@@ -163,28 +189,66 @@ gulp.task('js', function () {
     .pipe(gulp.dest(dests.build.js));
 });
 
+/**
+ * vendor js packaging
+ */
 gulp.task('vendor', function () {
-  return gulp.src(sources.vendorjs)
-    .pipe(uglify('libs.min.js', {
-      outSourceMap: true
-    }))
+  var vendors = gulp.src(sources.vendorjs)
+    // Remove paths so that we can have the sourcemap point to a single dir
+    .pipe(flatten())
+    // Write out all raw source files into the dist dir (for sourcemaps)
+    .pipe(gulp.dest(dests.build.jsorig))
+    // Ensure that any input file is newer than the output combined first
+    // gulp-newer, for combined files, requires up to point to the output file
+    .pipe(newer([
+      dests.build.js,
+      dests.filenames.vendormin
+    ].join('/')));
+
+  var vendorraw = vendors
+    .pipe(concat(dests.filenames.vendor));
+
+  var vendormin = vendors
+    // Minify
+    .pipe(uglify(dests.filenames.vendormin, {
+      outSourceMap: true,
+      basePath: dests.build.js
+    }));
+
+  // Merge streams since we split them
+  // and write both minified and unminified outputs
+  return merge(vendorraw, vendormin)
     .pipe(size({
       showFiles: true
     }))
     .pipe(gulp.dest(dests.build.js));
 });
 
+/**
+ * css minification
+ */
 gulp.task('css', function () {
   return gulp.src(sources.css)
+    // Ensure that any input file is newer than its output first
+    .pipe(flatten())
+    .pipe(newer(dests.build.css))
+    // Minify the css
     .pipe(cssmin())
     .pipe(size({
       showFiles: true
     }))
-    .pipe(gulp.dest(dests.build.root));
+    .pipe(gulp.dest(dests.build.css));
 });
 
+/**
+ * html minification (non-templates)
+ */
 gulp.task('html', function () {
   return gulp.src(sources.html)
+    // Ensure that any input file is newer than its output first
+    .pipe(flatten())
+    .pipe(newer(dests.build.root))
+    // Minify the html
     .pipe(htmlmin())
     .pipe(size({
       showFiles: true
@@ -192,8 +256,14 @@ gulp.task('html', function () {
     .pipe(gulp.dest(dests.build.root));
 });
 
+/**
+ * image minification
+ */
 gulp.task('images', function () {
   return gulp.src(sources.images)
+    .pipe(flatten())
+    // Ensure that any input file is newer than its output first
+    .pipe(newer(dests.build.images))
     .pipe(imagemin({
       progressive: true,
       use: [
@@ -203,8 +273,18 @@ gulp.task('images', function () {
       ],
       optimizationLevel: 5
     }))
-    .pipe(gulp.dest(dests.build.root));
+    .pipe(gulp.dest(dests.build.images));
 });
 
 
-gulp.task('build', ['lint', 'css', 'html', 'images', 'js', 'vendor']);
+/**
+ * ======================================
+ * ===  WATCHES  ========================
+ * ======================================
+ */
+gulp.task('watch', ['build'], function () {
+  gulp.watch([sources.js, sources.tpl], ['lint', 'js']);
+  gulp.watch(sources.css, ['css']);
+  gulp.watch(sources.images, ['images']);
+  gulp.watch(sources.html, ['html']);
+});
