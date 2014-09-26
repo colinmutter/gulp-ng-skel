@@ -6,17 +6,17 @@
   /**
    * @ngInject
    */
-  function LoginController($scope, $location, AuthService, flash) {
+  function LoginController($scope, $location, AuthService, flare) {
     $scope.login = function login() {
       return AuthService.login($scope.username, $scope.password)
         .success(function onSuccess(user) {
-          flash.success('Successful login', 10000);
+          flare.success('Successful login', 10000);
           // Tell parent controller about the user
           $scope.setCurrentUser(user);
           return $location.path('/');
         })
         .error(function onError(err) {
-          flash.error(err);
+          flare.error(err);
         });
     };
   }

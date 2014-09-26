@@ -13,7 +13,7 @@
      * Authentication interceptor for $http calls
      * @ngInject
      */
-    function authInterceptor($q, $location, $injector, flash) {
+    function authInterceptor($q, $location, $injector, flare) {
       return {
         'response': function responseInterceptor(response) {
           // Everything is OK
@@ -32,13 +32,11 @@
             $location.search('redirectUrl', currentPath)
               .path('/login');
             // Access denied
-          }
-          else if (response.status === 403) {
-            flash.error('Access denied', 10000);
+          } else if (response.status === 403) {
+            flare.error('Access denied', 10000);
             // Server error
-          }
-          else if (response.status === 500) {
-            flash.error('Internal server error', 10000);
+          } else if (response.status === 500) {
+            flare.error('Internal server error', 10000);
           }
           return $q.reject(response);
         }
@@ -47,15 +45,6 @@
 
     // Add the auth interceptor onto the response interceptors stack
     $httpProvider.interceptors.push(authInterceptor);
-  }
-
-  /**
-   * Flash messaging config
-   * @ngInject
-   */
-  function flashConfig(flashProvider) {
-    // Support bootstrap 3.0 "alert-danger" class with error flash types
-    flashProvider.errorClassnames.push('alert-danger');
   }
 
   /**
@@ -82,15 +71,12 @@
     'ngResource',
     'templates',
     'common.services',
-    'angular-flash.service',
-    'angular-flash.flash-alert-directive'
+    'angular-flare'
   ])
   // Configure http interceptor
   .config(authConfig)
   // Configure routes
   .config(routeConfig)
-  // Configure flash
-  .config(flashConfig)
   // Global service constants
   .constant('AUTH_EVENTS', {
     loginSuccess: 'auth-login-success',
