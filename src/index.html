@@ -15,11 +15,8 @@
     <!-- Authed header -->
     <div ng-if="currentUser" ng-include="'app/partials/header.tpl.html'"></div>
 
-    <!-- Flash message header -->
-    <div flash-alert active-class="in" class="alert fade">
-        <strong class="alert-heading">Notice</strong>
-        <span class="alert-message">{{flash.message}}</span>
-    </div>
+    <!-- Flare message header -->
+    <div flare-messages></div>
 
     <!-- App Vew Container -->
     <div ng-view></div>

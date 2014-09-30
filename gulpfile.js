@@ -71,7 +71,7 @@ var sources = {
     paths.bower + 'angular/angular.min.js',
 
     // Other bower deps
-    paths.bower + 'angular-flash/dist/angular-flash.min.js',
+    paths.bower + 'angular-flare/dist/angular-flare.min.js',
     paths.bower + 'angular-resource/angular-resource.min.js',
     paths.bower + 'angular-route/angular-route.min.js',
     paths.bower + 'angular-ui/build/angular-ui.min.js',
